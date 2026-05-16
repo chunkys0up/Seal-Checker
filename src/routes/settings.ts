@@ -41,3 +41,34 @@ settings.post('/validate-flair', async (c) => {
 
   return c.json<SettingsValidationResponse>({ success: true });
 });
+
+settings.post('/validate-time', async (c) => {
+  const { value } = await c.req.json<SettingsValidationRequest<number>>();
+
+  if (!value || value < 0) {
+    return c.json<SettingsValidationResponse>({
+      success: false,
+      error: `Enter a positive number`,
+    });
+  }
+
+  return c.json<SettingsValidationResponse>({ success: true });
+});
+
+settings.post('/validate-action', async (c) => {
+  const { value } = await c.req.json<SettingsValidationRequest<string>>();
+  const actions = ['lock', 'delete', 'report'];
+
+  if (!value || value.trim() === '') {
+    return c.json<SettingsValidationResponse>({ success: true });
+  }
+
+  if (!actions.includes(value)) {
+    return c.json<SettingsValidationResponse>({
+      success: false,
+      error: `Enter a valid action: lock, delete, or report`,
+    });
+  }
+
+  return c.json<SettingsValidationResponse>({ success: true });
+});

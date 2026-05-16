@@ -50,11 +50,13 @@
           "exemptFlairs": {
               "type": "string",
               "label": "Exempt tags from the bot, Ex input: Research post, flair1, blog",
+              "validationEndpoint": "/internal/settings/validate-flair",
               "defaultValue": ""
           },
           "actionOnExpiry": {
               "type": "string",
               "label": "Bot actions if poster doesn't provide url sources in time limit. Possible actions: lock, delete, report",
+              "validationEndpoint": "/internal/settings/validate-action",
               "defaultValue": "lock"
           }
       }
