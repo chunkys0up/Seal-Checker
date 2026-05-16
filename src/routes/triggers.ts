@@ -29,10 +29,12 @@ triggers.post('/on-post-submit', async (c) => {
 
   const postFlair = input.post?.linkFlair?.text;
 
-  // if the post has an exempt flair then skip it
-  if (exemptFlairs && postFlair && exemptFlairs.includes(postFlair)) {
+  // if the post has an exempt flair then skip it, or has none
+  if (!postFlair || (exemptFlairs && postFlair && exemptFlairs.includes(postFlair))) {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
-  
+  // check if there's a url.
+
+  return c.json<TriggerResponse>({ status: 'ok' });
 });
