@@ -5,60 +5,128 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
-  "menu": {
-    "items": [
-      {
-        "label": "Mop comments",
-        "description": "Remove this comment and all child comments. This might take a few seconds to run.",
-        "location": "comment",
-        "forUserType": "moderator",
-        "endpoint": "/internal/menu/mop-comment"
-      },
-      {
-        "label": "Mop post comments",
-        "description": "Remove all comments of this post. This might take a few seconds to run.",
-        "location": "post",
-        "forUserType": "moderator",
-        "endpoint": "/internal/menu/mop-post"
-      }
-    ]
-  },
-  "forms": {
-    "mopComment": "/internal/form/mop-comment-submit",
-    "mopPost": "/internal/form/mop-post-submit"
-  },
   "triggers": {
-    "onAppInstall": "/internal/triggers/on-app-install"
+    "onAppInstall": "/internal/triggers/on-app-install",
+    "onPostSubmit": "/internal/triggers/on-post-submit"
+  },
+  "scheduler": {
+    "tasks": {
+      "timeLimitScheduler": {
+        "endpoint": "/internal/scheduler/one-off-source-time-limit"
+      }
+    }
   },
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
   },
   "permissions": {
-    "reddit": true
+    "reddit": {
+      "enable": true,
+      "scope": "moderator",
+      "asUser": ["SUBMIT_COMMENT"]
+    },
+    "redis": true,
+    "http": {
+      "enable": true,
+      "domains": [
+        "generativelanguage.googleapis.com",
+        "reuters.com",
+        "apnews.com",
+        "bbc.com",
+        "bbc.co.uk",
+        "nytimes.com",
+        "washingtonpost.com",
+        "theguardian.com",
+        "npr.org",
+        "politico.com",
+        "thehill.com",
+        "axios.com",
+        "scientificamerican.com",
+        "economist.com",
+        "ft.com",
+        "bloomberg.com",
+        "nbcnews.com",
+        "abcnews.go.com",
+        "cbsnews.com",
+        "cnn.com",
+        "foxnews.com",
+        "msnbc.com",
+        "usatoday.com",
+        "nypost.com",
+        "newsweek.com",
+        "vice.com",
+        "vox.com",
+        "slate.com",
+        "theatlantic.com",
+        "foreignpolicy.com",
+        "foreignaffairs.com",
+        "propublica.org",
+        "theintercept.com",
+        "forbes.com",
+        "time.com",
+        "statista.com",
+        "who.int",
+        "cdc.gov",
+        "nih.gov",
+        "pewresearch.org",
+        "nature.com",
+        "science.org",
+        "thelancet.com",
+        "nejm.org",
+        "bmj.com",
+        "jamanetwork.com",
+        "cell.com",
+        "pnas.org",
+        "jstor.org",
+        "pubmed.ncbi.nlm.nih.gov",
+        "scholar.google.com",
+        "ssrn.com",
+        "arxiv.org",
+        "biorxiv.org",
+        "medrxiv.org",
+        "brookings.edu",
+        "rand.org",
+        "urban.org",
+        "cfr.org",
+        "carnegieendowment.org",
+        "wilsoncenter.org"
+      ]
+    }
   },
   "dev": {
     "subreddit": "seal_checker_dev"
   },
   "settings": {
-      "subreddit": {
-          "timeLimit": {
-              "type": "number",
-              "label": "Timer(minutes) for flagged post to post url source",
-              "defaultValue": 60
-          },
-          "exemptFlairs": {
-              "type": "string",
-              "label": "Exempt tags from the bot, Ex input: Research post, flair1, blog",
-              "validationEndpoint": "/internal/settings/validate-flair",
-              "defaultValue": ""
-          },
-          "actionOnExpiry": {
-              "type": "string",
-              "label": "Bot actions if poster doesn't provide url sources in time limit. Possible actions: lock, delete, report",
-              "validationEndpoint": "/internal/settings/validate-action",
-              "defaultValue": "lock"
-          }
+    "subreddit": {
+      "aiEnabled": {
+        "type": "boolean",
+        "label": "Use gemini to check if post title matches the article (clickbait/misinformation detection). If labeled as clickbait then user can be reported",
+        "defaultValue": false
+      },
+      "geminiApiKey": {
+        "type": "string",
+        "label": "Gemini Api Key",
+        "defaultValue": ""
+      },
+      "timeLimit": {
+        "type": "number",
+        "label": "Timer(minutes) for flagged post to post url source",
+        "validationEndpoint": "/internal/settings/validate-time",
+        "defaultValue": 60
+      },
+      "urlFlairs": {
+        "type": "string",
+        "label": "Flairs that require a url, Ex input: Research post, flair1, blog",
+        "validationEndpoint": "/internal/settings/validate-flair",
+        "defaultValue": ""
+      },
+      "actionOnExpiry": {
+        "type": "string",
+        "label": "Bot actions if poster doesn't provide url sources in time limit. Possible actions: lock, delete, report",
+        "validationEndpoint": "/internal/settings/validate-action",
+        "defaultValue": "lock"
       }
+    }
   }
 }

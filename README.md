@@ -92,3 +92,18 @@ The template demonstrates Reddit mod tool development through the "Mop" feature:
 4. Once approved, users can install your mod tool from Reddit's app directory
 
 This template provides everything you need to build powerful, user-friendly moderation tools for Reddit communities.
+
+# Ex. Post
+Post title overstates the findings of the study, the article only covers a limited sample size.
+*Note: This assessment was made by an AI and may not be fully accurate.*
+
+**Verified sources:**
+- reuters.com
+- pewresearch.org
+
+**Unverified sources:**
+- somerandomblog.com
+- randomnewssite.net
+
+---
+*This check was performed automatically. If you believe this is a mistake, please contact the moderators via modmail.*
