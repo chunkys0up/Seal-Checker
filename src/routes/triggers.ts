@@ -4,7 +4,7 @@ import type {
   OnPostSubmitRequest,
   TriggerResponse,
 } from '@devvit/web/shared';
-import { settings } from '@devvit/web/server';
+import { settings, scheduler } from '@devvit/web/server';
 import { urlChecker } from '../core/urlChecker';
 
 export const triggers = new Hono();
@@ -47,13 +47,24 @@ triggers.post('/on-post-submit', async (c) => {
 
   if (urlExists) {
     if (aiEnabled) {
-
     }
 
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
   // schedule a job to check in timeLimit
+  if (!timeLimit || !input.post) {
+    console.log('timeLimit not set or received');
+    return c.json<TriggerResponse>({ status: 'ok' });
+  }
+
+  const runAt = new Date(Date.now() + timeLimit * 60 * 60 * 1000);
+
+  await scheduler.runJob({
+    name: 'timeLimitScheduler', // must match devvit.json
+    data: { postId: input.post.id },
+    runAt,
+  });
 
   return c.json<TriggerResponse>({ status: 'ok' });
 });
