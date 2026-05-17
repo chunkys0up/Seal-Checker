@@ -5,8 +5,8 @@ import type {
   TriggerResponse,
 } from '@devvit/web/shared';
 import { reddit, settings, scheduler, context } from '@devvit/web/server';
-import { findUrls, checkVerifiedDomain } from '../core/urlChecker';
-import data from './../../devvit.json';
+import { findUrls, categorizeDomains } from '../core/domainVerifier';
+import { buildURLVerifiedComment } from '../core/commentBuilder';
 
 export const triggers = new Hono();
 
@@ -23,7 +23,7 @@ triggers.post('/on-app-install', async (c) => {
 });
 
 triggers.post('/on-post-submit', async (c) => {
-  console.log("Running on post submit");
+  console.log('Running on post submit');
 
   const input = await c.req.json<OnPostSubmitRequest>();
   const titleAndBody =
@@ -36,7 +36,7 @@ triggers.post('/on-post-submit', async (c) => {
   const actionOnExpiry = await settings.get<string>('actionOnExpiry');
 
   const postFlair = input.post?.linkFlair?.text;
-  console.log("post flair:", postFlair);
+  console.log('post flair:', postFlair);
 
   // only continue if the post has a flair we need to check
   if (!postFlair || !urlFlairs?.includes(postFlair)) {
@@ -53,22 +53,31 @@ triggers.post('/on-post-submit', async (c) => {
 
   const foundUrls = findUrls(titleAndBody);
 
+  /**
+   * If there are urls,
+   * Create message based on if they are verified or not
+   * if not verified, send mod mail of all unverified links
+   * Then if ai is enabled
+   * - gives chance to change some unverified links to verified
+   * - Gives 1-2 sentence quick summary of what the article was about
+   * - if there's a bit of clickbait then mention it.
+   */
   if (foundUrls.length > 0) {
-    const verifiedDomain = checkVerifiedDomain(foundUrls, data.permissions.http.domains);
-    if (verifiedDomain) {
-      commentText += `This post contains a source from a verified domain: **${verifiedDomain}**\n\n`;
-    } else {
-      commentText += `⚠️ Could not verify this source automatically. Mods have been notified to review.\n\n`;
+    const { verified, unverified } = categorizeDomains(foundUrls);
 
+    let clickbaitReason: string | undefined;
+    if (aiEnabled) {
+      // TODO: call AI to assess clickbait and set clickbaitReason
+    }
+
+    commentText += buildURLVerifiedComment(verified, unverified, aiEnabled ?? false, clickbaitReason);
+
+    if (unverified.length > 0) {
       await reddit.sendPrivateMessage({
         to: `/r/${context.subredditName}`,
         subject: 'Unverified source domain - manual review needed',
-        text: `A post has been submitted with a URL from an unverified domain.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nURL(s) found:\n${foundUrls.join('\n')}`,
+        text: `A post has been submitted with URLs from unverified domains.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.join('\n')}\n\nAll URL(s) found:\n${foundUrls.join('\n')}`,
       });
-    }
-
-    if (aiEnabled) {
-      // do something
     }
   } else {
     commentText += `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion in a future update.\n\n`;
