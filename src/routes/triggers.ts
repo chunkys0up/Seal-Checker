@@ -28,7 +28,7 @@ triggers.post('/on-post-submit', async (c) => {
   const titleAndBody =
     'title: ' + input.post?.title + '\n\n' + 'body: ' + input.post?.selftext;
 
-  const exemptFlairs = (await settings.get<string>('exemptFlairs'))?.split(',');
+  const urlFlairs = (await settings.get<string>('urlFlairs'))?.split(',');
   const aiEnabled = await settings.get<boolean>('aiEnabled');
   const apiKey = await settings.get<string>('geminiApiKey');
   const timeLimit = await settings.get<number>('timeLimit');
@@ -37,11 +37,8 @@ triggers.post('/on-post-submit', async (c) => {
   const postFlair = input.post?.linkFlair?.text;
   console.log("post flair:", postFlair);
 
-  // if the post has an exempt flair then skip it, or has none
-  if (
-    !postFlair ||
-    (exemptFlairs && postFlair && exemptFlairs.includes(postFlair))
-  ) {
+  // only continue if the post has a flair we need to check
+  if (!postFlair || !urlFlairs?.includes(postFlair)) {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
