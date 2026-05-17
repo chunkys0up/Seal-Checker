@@ -4,8 +4,9 @@ import type {
   OnPostSubmitRequest,
   TriggerResponse,
 } from '@devvit/web/shared';
-import { reddit, settings, scheduler } from '@devvit/web/server';
-import { urlChecker } from '../core/urlChecker';
+import { reddit, settings, scheduler, context } from '@devvit/web/server';
+import { findUrls, checkVerifiedDomain } from '../core/urlChecker';
+import data from './../../devvit.json';
 
 export const triggers = new Hono();
 
@@ -42,36 +43,51 @@ triggers.post('/on-post-submit', async (c) => {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
-  // check if there's a url.
-  const urlExists = urlChecker(titleAndBody);
-
-  if (urlExists) {
-    if (aiEnabled) {
-    }
-
-    return c.json<TriggerResponse>({ status: 'ok' });
-  }
-
-  // schedule a job to check in timeLimit
   if (!timeLimit || !input.post) {
     console.log('timeLimit not set or received');
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
-  const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
   const postId = input.post.id;
-  console.log(`title: ${input.post.title} postId: ${postId}`);
+  let commentText = '';
 
-  await scheduler.runJob({
-    name: 'timeLimitScheduler', // must match devvit.json
-    data: { postId: postId },
-    runAt,
-  });
+  const foundUrls = findUrls(titleAndBody);
 
-  await reddit.submitComment({
-    id: postId as `t3_${string}`,
-    text: "test: need url",
-  })
+  if (foundUrls.length > 0) {
+    const verifiedDomain = checkVerifiedDomain(foundUrls, data.permissions.http.domains);
+    if (verifiedDomain) {
+      commentText += `This post contains a source from a verified domain: **${verifiedDomain}**\n\n`;
+    } else {
+      commentText += `⚠️ Could not verify this source automatically. Mods have been notified to review.\n\n`;
+
+      await reddit.sendPrivateMessage({
+        to: `/r/${context.subredditName}`,
+        subject: 'Unverified source domain - manual review needed',
+        text: `A post has been submitted with a URL from an unverified domain.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nURL(s) found:\n${foundUrls.join('\n')}`,
+      });
+    }
+
+    if (aiEnabled) {
+      // do something
+    }
+  } else {
+    commentText += `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion in a future update.\n\n`;
+
+    const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
+    console.log(`title: ${input.post.title} postId: ${postId}`);
+    await scheduler.runJob({
+      name: 'timeLimitScheduler',
+      data: { postId },
+      runAt,
+    });
+  }
+
+  if (commentText) {
+    await reddit.submitComment({
+      id: postId as `t3_${string}`,
+      text: commentText.trimEnd(),
+    });
+  }
 
   return c.json<TriggerResponse>({ status: 'ok' });
 });
