@@ -61,7 +61,7 @@ triggers.post('/on-post-submit', async (c) => {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
-  const runAt = new Date(Date.now() + timeLimit * 60 * 60 * 1000);
+  const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
   const postId = input.post.id;
   console.log(`title: ${input.post.title} postId: ${postId}`);
 
