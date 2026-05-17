@@ -1,9 +1,20 @@
-import data from '../../devvit.json';
-
-const allowlist = data.permissions.http.domains;
+import allowlist from './verifiedDomains.json';
 
 export function findUrls(text: string): string[] {
-  return text.match(/https?:\/\/[^\s]+/g) ?? [];
+  const urls = new Set<string>();
+
+  // extract hrefs from markdown links [text](url) first
+  for (const match of text.matchAll(/\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/g)) {
+    if (match[1]) urls.add(match[1].replace(/\/$/, ''));
+  }
+
+  // strip markdown links then find remaining bare URLs
+  const stripped = text.replace(/\[[^\]]*\]\(https?:\/\/[^)\s]+\)/g, '');
+  for (const url of stripped.match(/https?:\/\/[^\s)]+/g) ?? []) {
+    urls.add(url.replace(/\/$/, ''));
+  }
+
+  return Array.from(urls);
 }
 
 export function categorizeDomains(urls: string[]): { verified: string[]; unverified: string[] } {

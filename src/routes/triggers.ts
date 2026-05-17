@@ -44,7 +44,6 @@ triggers.post('/on-post-submit', async (c) => {
   }
 
   if (!timeLimit || !input.post) {
-    console.log('timeLimit not set or received');
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
@@ -62,8 +61,11 @@ triggers.post('/on-post-submit', async (c) => {
    * - Gives 1-2 sentence quick summary of what the article was about
    * - if there's a bit of clickbait then mention it.
    */
+  console.log("found urls", foundUrls);
   if (foundUrls.length > 0) {
     const { verified, unverified } = categorizeDomains(foundUrls);
+    console.log("verified urls:", verified);
+    console.log("unverified urls:", unverified);
 
     let clickbaitReason: string | undefined;
     if (aiEnabled) {
