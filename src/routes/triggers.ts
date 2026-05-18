@@ -43,11 +43,12 @@ triggers.post('/on-post-submit', async (c) => {
   console.log('post flair:', postFlair);
 
   // only continue if the post has a flair we need to check
-  if (!postFlair || !urlFlairs?.includes(postFlair)) {
-    return c.json<TriggerResponse>({ status: 'ok' });
-  }
-
-  if (!timeLimit || !input.post) {
+  if (
+    !postFlair ||
+    !urlFlairs?.includes(postFlair) ||
+    !timeLimit ||
+    !input.post
+  ) {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
@@ -82,16 +83,6 @@ triggers.post('/on-post-submit', async (c) => {
     }
   } else {
     commentText += `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n`;
-
-    const action = actionOnExpiry ? actionOnExpiry : 'none';
-
-    const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
-    console.log(`title: ${input.post.title} postId: ${postId}`);
-    await scheduler.runJob({
-      name: 'timeLimitScheduler',
-      data: { postId, action },
-      runAt,
-    });
   }
 
   const botComment = await reddit.submitComment({
@@ -100,10 +91,21 @@ triggers.post('/on-post-submit', async (c) => {
   });
 
   if (foundUrls.length == 0) {
-    // add postId: {authorId, botcommentId}
+    const action = actionOnExpiry ? actionOnExpiry : 'none';
+
+    const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
+    console.log(`title: ${input.post.title} postId: ${postId}`);
+    const jobId = await scheduler.runJob({
+      name: 'timeLimitScheduler',
+      data: { postId, action },
+      runAt,
+    });
+
+    // add postId: {authorId, botcommentId, schedulerId}
     await redis.hSet(postId, {
       authorId: input.post.authorId,
       botCommentId: botComment.id,
+      schedulerId: jobId,
     });
   }
 
@@ -112,6 +114,30 @@ triggers.post('/on-post-submit', async (c) => {
 
 triggers.post('/on-poster-comment-submit', async (c) => {
   const input = await c.req.json<OnCommentCreateRequest>();
+
+  if (!input || !input.comment || !input.author || !input.post) {
+    return c.json<TriggerResponse>({ status: 'ok' });
+  }
+
+  const postInfo = await redis.hGetAll(input.comment.postId);
+
+  if (!postInfo) {
+    return c.json<TriggerResponse>({ status: 'ok' });
+  }
+
+  // found author comment
+  if (postInfo.authorId == input.author.id) {
+    const foundUrls = findUrls(input.comment.body);
+
+    // found url, delete the scheduler and redis key-values
+    if (foundUrls.length > 0) {
+      await redis.del(input.post.id);
+
+      if (postInfo.jobId) {
+        await scheduler.cancelJob(postInfo.jobId);
+      }
+    }
+  }
 
   return c.json<TriggerResponse>({ status: 'ok' });
 });
