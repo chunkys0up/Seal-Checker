@@ -53,7 +53,7 @@ triggers.post('/on-post-submit', async (c) => {
   }
 
   const postId = input.post.id;
-  let commentText = '';
+  let commentText = 'No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n';
 
   const foundUrls = findUrls(titleAndBody);
 
@@ -61,10 +61,6 @@ triggers.post('/on-post-submit', async (c) => {
    * If there are urls,
    * Create message based on if they are verified or not
    * if not verified, send mod mail of all unverified links
-   * Then if ai is enabled
-   * - gives chance to change some unverified links to verified
-   * - Gives 1-2 sentence quick summary of what the article was about
-   * - if there's a bit of clickbait then mention it.
    */
   console.log('found urls', foundUrls);
   if (foundUrls.length > 0) {
@@ -72,7 +68,7 @@ triggers.post('/on-post-submit', async (c) => {
     console.log('verified urls:', verified);
     console.log('unverified urls:', unverified);
 
-    commentText += buildURLVerifiedComment(verified, unverified);
+    commentText = buildURLVerifiedComment(verified, unverified);
 
     if (unverified.length > 0) {
       await reddit.sendPrivateMessage({
@@ -81,8 +77,6 @@ triggers.post('/on-post-submit', async (c) => {
         text: `A post has been submitted with URLs from unverified domains.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.join('\n')}\n\nAll URL(s) found:\n${foundUrls.join('\n')}`,
       });
     }
-  } else {
-    commentText += `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n`;
   }
 
   const botComment = await reddit.submitComment({
@@ -90,12 +84,12 @@ triggers.post('/on-post-submit', async (c) => {
     text: commentText.trimEnd(),
   });
 
-  if (foundUrls.length == 0) {
+  if (foundUrls.length === 0) {
     const action = actionOnExpiry ? actionOnExpiry : 'none';
 
     const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
     console.log(`title: ${input.post.title} postId: ${postId}`);
-    const jobId = await scheduler.runJob({
+    const schedulerId = await scheduler.runJob({
       name: 'timeLimitScheduler',
       data: { postId, action },
       runAt,
@@ -105,7 +99,7 @@ triggers.post('/on-post-submit', async (c) => {
     await redis.hSet(postId, {
       authorId: input.post.authorId,
       botCommentId: botComment.id,
-      schedulerId: jobId,
+      schedulerId: schedulerId,
     });
   }
 
@@ -119,7 +113,8 @@ triggers.post('/on-poster-comment-submit', async (c) => {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
-  const postInfo = await redis.hGetAll(input.comment.postId);
+  const postId = input.comment.postId;
+  const postInfo = await redis.hGetAll(postId);
 
   if (!postInfo) {
     return c.json<TriggerResponse>({ status: 'ok' });
@@ -131,11 +126,28 @@ triggers.post('/on-poster-comment-submit', async (c) => {
 
     // found url, delete the scheduler and redis key-values
     if (foundUrls.length > 0) {
-      await redis.del(input.post.id);
+      const { verified, unverified } = categorizeDomains(foundUrls);
 
-      if (postInfo.jobId) {
-        await scheduler.cancelJob(postInfo.jobId);
+      if (postInfo.botCommentId) {
+        const botComment = await reddit.getCommentById(postInfo.botCommentId as `t1_${string}`);
+        await botComment.edit({
+          text: buildURLVerifiedComment(verified, unverified),
+        });
       }
+
+      if (unverified.length > 0) {
+        await reddit.sendPrivateMessage({
+          to: `/r/${context.subredditName}`,
+          subject: 'Unverified source domain - manual review needed',
+          text: `OP has provided URLs from unverified domains in a comment.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.join('\n')}\n\nAll URL(s) found:\n${foundUrls.join('\n')}`,
+        });
+      }
+
+      if (postInfo.schedulerId) {
+        await scheduler.cancelJob(postInfo.schedulerId);
+      }
+
+      await redis.del(postId);
     }
   }
 

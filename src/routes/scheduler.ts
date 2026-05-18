@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { reddit, redis, TaskRequest, TaskResponse } from '@devvit/web/server';
+import { redis, TaskRequest, TaskResponse } from '@devvit/web/server';
 
 export const scheduler = new Hono();
 
