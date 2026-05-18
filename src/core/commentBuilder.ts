@@ -1,16 +1,8 @@
 export function buildURLVerifiedComment(
   verifiedDomains: string[],
-  unverifiedDomains: string[],
-  aiEnabled: boolean,
-  clickbaitReason?: string
+  unverifiedDomains: string[]
 ): string {
   const lines: string[] = [];
-
-  if (aiEnabled && clickbaitReason) {
-    lines.push(clickbaitReason);
-    lines.push('*Note: This assessment was made by an AI and may not be fully accurate.*');
-    lines.push('');
-  }
 
   if (verifiedDomains.length > 0) {
     lines.push('**Verified sources:**');

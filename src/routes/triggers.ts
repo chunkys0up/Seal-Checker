@@ -23,15 +23,13 @@ triggers.post('/on-app-install', async (c) => {
 });
 
 triggers.post('/on-post-submit', async (c) => {
-  console.log('Running on post submit');
+  console.log('\nRunning on post submit');
 
   const input = await c.req.json<OnPostSubmitRequest>();
   const titleAndBody =
     'title: ' + input.post?.title + '\n\n' + 'body: ' + input.post?.selftext;
 
   const urlFlairs = (await settings.get<string>('urlFlairs'))?.split(',');
-  const aiEnabled = await settings.get<boolean>('aiEnabled');
-  const apiKey = await settings.get<string>('geminiApiKey');
   const timeLimit = await settings.get<number>('timeLimit');
   const actionOnExpiry = await settings.get<string>('actionOnExpiry');
 
@@ -67,12 +65,7 @@ triggers.post('/on-post-submit', async (c) => {
     console.log("verified urls:", verified);
     console.log("unverified urls:", unverified);
 
-    let clickbaitReason: string | undefined;
-    if (aiEnabled) {
-      // TODO: call AI to assess clickbait and set clickbaitReason
-    }
-
-    commentText += buildURLVerifiedComment(verified, unverified, aiEnabled ?? false, clickbaitReason);
+    commentText += buildURLVerifiedComment(verified, unverified);
 
     if (unverified.length > 0) {
       await reddit.sendPrivateMessage({

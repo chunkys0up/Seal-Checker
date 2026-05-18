@@ -26,27 +26,13 @@
       "scope": "moderator",
       "asUser": ["SUBMIT_COMMENT"]
     },
-    "redis": true,
-    "http": {
-      "enable": true,
-      "domains": ["generativelanguage.googleapis.com"]
-    }
+    "redis": true
   },
   "dev": {
     "subreddit": "seal_checker_dev"
   },
   "settings": {
     "subreddit": {
-      "aiEnabled": {
-        "type": "boolean",
-        "label": "Use gemini to check if post title matches the article (clickbait/misinformation detection). If labeled as clickbait then user can be reported",
-        "defaultValue": false
-      },
-      "geminiApiKey": {
-        "type": "string",
-        "label": "Gemini Api Key",
-        "defaultValue": ""
-      },
       "timeLimit": {
         "type": "number",
         "label": "Timer(minutes) for flagged post to post url source",
