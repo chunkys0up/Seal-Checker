@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { redis, TaskRequest, TaskResponse } from '@devvit/web/server';
+import { reddit, redis, TaskRequest, TaskResponse } from '@devvit/web/server';
 
 export const scheduler = new Hono();
 
 scheduler.post('/one-off-source-time-limit', async (c) => {
-  const req = await c.req.json<TaskRequest<{ postId: string }>>();
+  const req = await c.req.json<TaskRequest<{ postId: string, action: string }>>();
   const postId = req.data.postId;
 
   const postInfo = await redis.hGetAll(postId);
@@ -14,6 +14,22 @@ scheduler.post('/one-off-source-time-limit', async (c) => {
   }
 
   // lock, delete, report
+  const post = await reddit.getPostById(postId as `t3_${string}`);
+  const action = req.data.postId;
+
+  switch(action) {
+    case 'lock':
+      await post.lock();
+      break;
+    case 'delete':
+      await post.delete();
+      break;
+    case 'report':
+      await reddit.report(post, {
+        reason: 'Poster did not link a url to the tagged post.',
+      });
+      break;
+  }
 
   // delete redis key-value
   await redis.del(postId);
