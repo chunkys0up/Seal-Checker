@@ -2,12 +2,18 @@ import { Hono } from 'hono';
 import type {
   OnAppInstallRequest,
   OnPostSubmitRequest,
+  OnCommentCreateRequest,
   TriggerResponse,
 } from '@devvit/web/shared';
-import { reddit, settings, scheduler, context } from '@devvit/web/server';
+import {
+  reddit,
+  redis,
+  settings,
+  scheduler,
+  context,
+} from '@devvit/web/server';
 import { findUrls, categorizeDomains } from '../core/domainVerifier';
 import { buildURLVerifiedComment } from '../core/commentBuilder';
-
 export const triggers = new Hono();
 
 triggers.post('/on-app-install', async (c) => {
@@ -59,11 +65,11 @@ triggers.post('/on-post-submit', async (c) => {
    * - Gives 1-2 sentence quick summary of what the article was about
    * - if there's a bit of clickbait then mention it.
    */
-  console.log("found urls", foundUrls);
+  console.log('found urls', foundUrls);
   if (foundUrls.length > 0) {
     const { verified, unverified } = categorizeDomains(foundUrls);
-    console.log("verified urls:", verified);
-    console.log("unverified urls:", unverified);
+    console.log('verified urls:', verified);
+    console.log('unverified urls:', unverified);
 
     commentText += buildURLVerifiedComment(verified, unverified);
 
@@ -75,23 +81,37 @@ triggers.post('/on-post-submit', async (c) => {
       });
     }
   } else {
-    commentText += `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion in a future update.\n\n`;
+    commentText += `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n`;
+
+    const action = actionOnExpiry ? actionOnExpiry : 'none';
 
     const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
     console.log(`title: ${input.post.title} postId: ${postId}`);
     await scheduler.runJob({
       name: 'timeLimitScheduler',
-      data: { postId },
+      data: { postId, action },
       runAt,
     });
   }
 
-  if (commentText) {
-    await reddit.submitComment({
-      id: postId as `t3_${string}`,
-      text: commentText.trimEnd(),
+  const botComment = await reddit.submitComment({
+    id: postId as `t3_${string}`,
+    text: commentText.trimEnd(),
+  });
+
+  if (foundUrls.length == 0) {
+    // add postId: {authorId, botcommentId}
+    await redis.hSet(postId, {
+      authorId: input.post.authorId,
+      botCommentId: botComment.id,
     });
   }
+
+  return c.json<TriggerResponse>({ status: 'ok' });
+});
+
+triggers.post('/on-poster-comment-submit', async (c) => {
+  const input = await c.req.json<OnCommentCreateRequest>();
 
   return c.json<TriggerResponse>({ status: 'ok' });
 });

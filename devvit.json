@@ -7,7 +7,8 @@
   },
   "triggers": {
     "onAppInstall": "/internal/triggers/on-app-install",
-    "onPostSubmit": "/internal/triggers/on-post-submit"
+    "onPostSubmit": "/internal/triggers/on-post-submit",
+    "onCommentSubmit": "/internal/triggers/on-poster-comment-submit"
   },
   "scheduler": {
     "tasks": {
