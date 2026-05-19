@@ -36,5 +36,5 @@ Seal Checker comes with a prebuilt list of trusted domains covering major news o
 https://github.com/chunkys0up/Seal-Checker
 
 ## Changelog
-### v0.0.2 – May 2026
+### v0.0.3 – May 2026
 - App is published
