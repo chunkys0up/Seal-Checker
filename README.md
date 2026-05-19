@@ -1,109 +1,74 @@
-# Devvit Mod Tool Template
+**Seal Checker** is a moderation tool that automatically enforces source requirements on posts.Seal Checker is a moderation tool that automatically enforces source requirements on posts. If a post is missing a URL, the bot prompts OP to provide one within a set time limit or the post will be locked, deleted, or reported based on your configuration.
 
-A template for building Reddit moderation tools using Devvit web. This template provides a complete foundation for creating custom moderation tools with bulk comment management capabilities.
+When a post is submitted without a URL, Seal Checker drops a bot comment notifying OP and starting a countdown. If OP replies with a URL in time, the bot comment updates to reflect the provided sources, with unverified domains flagged to mods automatically. If no URL is provided before the timer expires, the configured action is taken.
 
-## Features
+Seal Checker comes with a prebuilt list of trusted domains covering major news outlets and research journals. You can add your own on top of the default list, or replace it entirely via app settings.
 
-This template includes a working mod tool called **"Mop"** that demonstrates:
+# **Settings**, accessible via the Developer Platform app portal:
 
-- **Bulk Comment Management**: Remove or lock multiple comments at once
-- **Thread-level Actions**: "Mop comments" - Remove/lock a comment and all its replies
-- **Post-level Actions**: "Mop post comments" - Remove/lock all comments on a post
-- **Flexible Options**:
-  - Remove comments, lock comments, or both
-  - Skip distinguished comments (moderator/admin posts)
-- **Permission Checks**: Only moderators with proper permissions can use the tool
-- **User-friendly Forms**: Interactive forms with clear options and validation
+- Flairs that require a URL source
+- Time limit for OP to provide a URL (in minutes)
+- Action on expiry: lock, delete, or report
+- Custom trusted domains, with the option to overwrite the default list
 
-## Tech Stack
-
-- [Devvit](https://developers.reddit.com/): Reddit's platform for building and deploying apps
-- [Vite](https://vite.dev/): Fast build tool for the web components
-- [Hono](https://hono.dev/): Lightweight web framework for backend logic
-- [TypeScript](https://www.typescriptlang.org/): Type-safe development
-
-## Getting Started
-
-1. **Clone this template** or use it as a starting point for your mod tool
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-3. **Configure your app** in `devvit.json`:
-   - Update the app name
-   - Set your development subreddit
-4. **Start developing**:
-   ```bash
-   npm run dev
-   ```
-5. **Test your changes** in your development subreddit
-
-## Project Structure
-
-```
-src/
-├── index.ts          # Main server setup with Hono routes
-├── core/
-│   └── nuke.ts       # Core moderation logic for bulk operations
-└── routes/
-    ├── api.ts        # Public API endpoints
-    ├── forms.ts      # Form submission handlers
-    ├── menu.ts       # Context menu item handlers
-    └── triggers.ts   # App lifecycle triggers
-```
-
-## Customizing Your Mod Tool
-
-This template is designed to be easily customizable:
-
-1. **Modify existing actions**: Edit the nuke functionality in `src/core/nuke.ts`
-2. **Add new menu items**: Update `devvit.json` and add handlers in `src/routes/menu.ts`
-3. **Create new forms**: Add form definitions and handlers in `src/routes/forms.ts`
-4. **Add API endpoints**: Extend `src/routes/api.ts` for external integrations
-
-## Commands
-
-- `npm run dev`: Starts development mode with live reload on your test subreddit
-- `npm run build`: Builds your mod tool for production
-- `npm run deploy`: Uploads a new version of your app to Reddit
-- `npm run launch`: Publishes your app for review and public use
-- `npm run login`: Authenticates your CLI with Reddit
-- `npm run type-check`: Runs TypeScript type checking, linting, and formatting
-
-## How It Works
-
-The template demonstrates Reddit mod tool development through the "Mop" feature:
-
-1. **Context Menu Integration**: Click on the Mod Shield icon in a comment to see custom mod actions
-2. **Permission Validation**: Automatically checks if the user has moderation permissions
-3. **Interactive Forms**: Presents options through Reddit's native form system
-4. **Reddit API**: Processes multiple comments using Reddit's API
-
-## Development Notes
-
-- **Permissions**: The app requires `reddit: true` permission to access Reddit's API
-- **User Types**: Menu items are restricted to `moderator` user type
-
-## Deployment
-
-1. Test thoroughly in your development subreddit
-2. Run `npm run deploy` to upload your app
-3. Use `npm run launch` to submit for Reddit's app review process
-4. Once approved, users can install your mod tool from Reddit's app directory
-
-This template provides everything you need to build powerful, user-friendly moderation tools for Reddit communities.
-
-# Ex. Post
-Post title overstates the findings of the study, the article only covers a limited sample size.
-*Note: This assessment was made by an AI and may not be fully accurate.*
-
-**Verified sources:**
+# Default List
 - reuters.com
+- apnews.com
+- bbc.com
+- bbc.co.uk
+- nytimes.com
+- washingtonpost.com
+- theguardian.com
+- npr.org
+- politico.com
+- thehill.com
+- axios.com
+- scientificamerican.com
+- economist.com
+- ft.com
+- bloomberg.com
+- nbcnews.com
+- abcnews.go.com
+- cbsnews.com
+- cnn.com
+- foxnews.com
+- msnbc.com
+- usatoday.com
+- nypost.com
+- newsweek.com
+- vice.com
+- vox.com
+- slate.com
+- theatlantic.com
+- foreignpolicy.com
+- foreignaffairs.com
+- propublica.org
+- theintercept.com
+- forbes.com
+- time.com
+- statista.com
+- who.int
+- cdc.gov
+- nih.gov
 - pewresearch.org
-
-**Unverified sources:**
-- somerandomblog.com
-- randomnewssite.net
-
----
-*This check was performed automatically. If you believe this is a mistake, please contact the moderators via modmail.*
+- nature.com
+- science.org
+- thelancet.com
+- nejm.org
+- bmj.com
+- jamanetwork.com
+- cell.com
+- pnas.org
+- jstor.org
+- pubmed.ncbi.nlm.nih.gov
+- scholar.google.com
+- ssrn.com
+- arxiv.org
+- biorxiv.org
+- medrxiv.org
+- brookings.edu
+- rand.org
+- urban.org
+- cfr.org
+- carnegieendowment.org
+- wilsoncenter.org

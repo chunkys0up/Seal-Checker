@@ -18,7 +18,7 @@ export function buildURLVerifiedComment(
 
   lines.push('---');
   lines.push(
-    '*This check was performed automatically. If you believe this is a mistake, please contact the moderators via modmail.*'
+    '*This check was performed automatically. If any of your unverified sources are from a reputable domain, please contact the moderators via modmail to have it added to the verified domains list.*'
   );
 
   return lines.join('\n');

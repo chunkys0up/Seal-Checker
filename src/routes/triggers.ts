@@ -61,7 +61,7 @@ triggers.post('/on-post-submit', async (c) => {
   }
 
   const postId = input.post.id;
-  let commentText = `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minute(s) or this post may be deleted or locked.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n`;
+  let commentText = `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minute(s) or this post may be deleted or locked.`;
 
   const textToSearch = input.post.url
     ? titleAndBody + '\n\n' + input.post.url
@@ -89,7 +89,7 @@ triggers.post('/on-post-submit', async (c) => {
       await reddit.sendPrivateMessage({
         to: `/r/${context.subredditName}`,
         subject: 'Unverified source domain - manual review needed',
-        text: `A post has been submitted with URLs from unverified domains.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.join('\n')}\n\nAll URL(s) found:\n${foundUrls.join('\n')}`,
+        text: `A post has been submitted with URLs from unverified domains.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.map((d) => `- ${d}`).join('\n')}`,
       });
     }
   }
@@ -161,7 +161,7 @@ triggers.post('/on-poster-comment-submit', async (c) => {
         await reddit.sendPrivateMessage({
           to: `/r/${context.subredditName}`,
           subject: 'Unverified source domain - manual review needed',
-          text: `OP has provided URLs from unverified domains in a comment.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.join('\n')}\n\nAll URL(s) found:\n${foundUrls.join('\n')}`,
+          text: `OP has provided URLs from unverified domains in a comment.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.map((d) => `- ${d}`).join('\n')}`,
         });
       }
 
