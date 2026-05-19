@@ -12,8 +12,13 @@ import {
   scheduler,
   context,
 } from '@devvit/web/server';
-import { findUrls, categorizeDomains } from '../core/domainVerifier';
+import {
+  findUrls,
+  categorizeDomains,
+  getEffectiveAllowlist,
+} from '../core/domainVerifier';
 import { buildURLVerifiedComment } from '../core/commentBuilder';
+
 export const triggers = new Hono();
 
 triggers.post('/on-app-install', async (c) => {
@@ -35,7 +40,10 @@ triggers.post('/on-post-submit', async (c) => {
   const titleAndBody =
     'title: ' + input.post?.title + '\n\n' + 'body: ' + input.post?.selftext;
 
-  const urlFlairs = (await settings.get<string>('urlFlairs'))?.split(',').map(f => f.trim());
+  // Fetch the settings
+  const urlFlairs = (await settings.get<string>('urlFlairs'))
+    ?.split(',')
+    .map((f) => f.trim());
   const timeLimit = await settings.get<number>('timeLimit');
   const actionOnExpiry = await settings.get<string>('actionOnExpiry');
 
@@ -55,7 +63,10 @@ triggers.post('/on-post-submit', async (c) => {
   const postId = input.post.id;
   let commentText = `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minute(s) or this post may be deleted or locked.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n`;
 
-  const foundUrls = findUrls(titleAndBody);
+  const textToSearch = input.post.url
+    ? titleAndBody + '\n\n' + input.post.url
+    : titleAndBody;
+  const foundUrls = findUrls(textToSearch);
 
   /**
    * If there are urls,
@@ -64,7 +75,11 @@ triggers.post('/on-post-submit', async (c) => {
    */
   console.log('found urls', foundUrls);
   if (foundUrls.length > 0) {
-    const { verified, unverified } = categorizeDomains(foundUrls);
+    const effectiveAllowlist = await getEffectiveAllowlist();
+    const { verified, unverified } = categorizeDomains(
+      foundUrls,
+      effectiveAllowlist
+    );
     console.log('verified urls:', verified);
     console.log('unverified urls:', unverified);
 
@@ -86,7 +101,7 @@ triggers.post('/on-post-submit', async (c) => {
 
   if (foundUrls.length === 0 && input.post.authorId) {
     const action = actionOnExpiry ? actionOnExpiry : 'none';
-    console.log("Action when scheduler happens:", action);
+    console.log('Action when scheduler happens:', action);
 
     const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
     const schedulerId = await scheduler.runJob({
@@ -127,10 +142,16 @@ triggers.post('/on-poster-comment-submit', async (c) => {
 
     // found url, delete the scheduler and redis key-values
     if (foundUrls.length > 0) {
-      const { verified, unverified } = categorizeDomains(foundUrls);
+      const effectiveAllowlist = await getEffectiveAllowlist();
+      const { verified, unverified } = categorizeDomains(
+        foundUrls,
+        effectiveAllowlist
+      );
 
       if (postInfo.botCommentId) {
-        const botComment = await reddit.getCommentById(postInfo.botCommentId as `t1_${string}`);
+        const botComment = await reddit.getCommentById(
+          postInfo.botCommentId as `t1_${string}`
+        );
         await botComment.edit({
           text: buildURLVerifiedComment(verified, unverified),
         });
