@@ -35,7 +35,7 @@ triggers.post('/on-post-submit', async (c) => {
   const titleAndBody =
     'title: ' + input.post?.title + '\n\n' + 'body: ' + input.post?.selftext;
 
-  const urlFlairs = (await settings.get<string>('urlFlairs'))?.split(',');
+  const urlFlairs = (await settings.get<string>('urlFlairs'))?.split(',').map(f => f.trim());
   const timeLimit = await settings.get<number>('timeLimit');
   const actionOnExpiry = await settings.get<string>('actionOnExpiry');
 
@@ -46,14 +46,14 @@ triggers.post('/on-post-submit', async (c) => {
   if (
     !postFlair ||
     !urlFlairs?.includes(postFlair) ||
-    !timeLimit ||
+    timeLimit == null ||
     !input.post
   ) {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
   const postId = input.post.id;
-  let commentText = 'No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minutes or this post may be actioned.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n';
+  let commentText = `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minute(s) or this post may be deleted or locked.\n\nIf your source is from a credible domain not yet on our verified list, please contact the moderators so it can be considered for inclusion\n\n`;
 
   const foundUrls = findUrls(titleAndBody);
 
@@ -84,11 +84,11 @@ triggers.post('/on-post-submit', async (c) => {
     text: commentText.trimEnd(),
   });
 
-  if (foundUrls.length === 0) {
+  if (foundUrls.length === 0 && input.post.authorId) {
     const action = actionOnExpiry ? actionOnExpiry : 'none';
+    console.log("Action when scheduler happens:", action);
 
     const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
-    console.log(`title: ${input.post.title} postId: ${postId}`);
     const schedulerId = await scheduler.runJob({
       name: 'timeLimitScheduler',
       data: { postId, action },
@@ -101,6 +101,7 @@ triggers.post('/on-post-submit', async (c) => {
       botCommentId: botComment.id,
       schedulerId: schedulerId,
     });
+    await redis.expire(postId, timeLimit * 60 + 300);
   }
 
   return c.json<TriggerResponse>({ status: 'ok' });
@@ -116,7 +117,7 @@ triggers.post('/on-poster-comment-submit', async (c) => {
   const postId = input.comment.postId;
   const postInfo = await redis.hGetAll(postId);
 
-  if (!postInfo) {
+  if (!postInfo || Object.keys(postInfo).length === 0) {
     return c.json<TriggerResponse>({ status: 'ok' });
   }
 
