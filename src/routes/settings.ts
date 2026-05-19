@@ -55,6 +55,47 @@ settings.post('/validate-time', async (c) => {
   return c.json<SettingsValidationResponse>({ success: true });
 });
 
+settings.post('/validate-custom-domains', async (c) => {
+  const { value } = await c.req.json<SettingsValidationRequest<string>>();
+
+  if (!value || value.trim() === '') {
+    return c.json<SettingsValidationResponse>({ success: true });
+  }
+
+  const domains = value.split(',').map((d) => d.trim().toLowerCase());
+
+  if (domains.some((d) => d === '')) {
+    return c.json<SettingsValidationResponse>({
+      success: false,
+      error: 'Invalid format — check for trailing or double commas',
+    });
+  }
+
+  const invalidDomains = domains.filter((d) => !/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+$/.test(d));
+  if (invalidDomains.length > 0) {
+    return c.json<SettingsValidationResponse>({
+      success: false,
+      error: `Invalid domain format (no http://, no www., just the domain): ${invalidDomains.join(', ')}`,
+    });
+  }
+
+  const seen = new Set<string>();
+  const duplicates = domains.filter((d) => {
+    if (seen.has(d)) return true;
+    seen.add(d);
+    return false;
+  });
+
+  if (duplicates.length > 0) {
+    return c.json<SettingsValidationResponse>({
+      success: false,
+      error: `Duplicate domain(s) found: ${[...new Set(duplicates)].join(', ')}`,
+    });
+  }
+
+  return c.json<SettingsValidationResponse>({ success: true });
+});
+
 settings.post('/validate-action', async (c) => {
   const { value } = await c.req.json<SettingsValidationRequest<string>>();
   const actions = ['lock', 'delete', 'report'];

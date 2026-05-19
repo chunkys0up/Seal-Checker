@@ -34,6 +34,17 @@
   },
   "settings": {
     "subreddit": {
+      "overwriteDefaultDomains": {
+        "type": "boolean",
+        "label": "Off = use prebuilt list + any custom domains combined. On = ignore prebuilt list, only use custom domains",
+        "defaultValue": true
+      },
+      "customDomains": {
+        "type": "string",
+        "label": "Extra domains mods want to add or use exclusively depending on the toggle above. Ex: bbc.com, reuters.com, apnews.com",
+        "validationEndpoint": "/internal/settings/validate-custom-domains",
+        "defaultValue": ""
+      },
       "timeLimit": {
         "type": "number",
         "label": "Timer(minutes) for flagged post to post url source",
