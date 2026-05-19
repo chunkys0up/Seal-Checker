@@ -32,6 +32,9 @@ Seal Checker comes with a prebuilt list of trusted domains covering major news o
 - brookings.edu
 - arxiv.org
 
+## Github Repo
+https://github.com/chunkys0up/Seal-Checker
+
 ## Changelog
 ### v0.0.2 – May 2026
 - App is published
