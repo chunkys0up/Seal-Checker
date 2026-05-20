@@ -16,26 +16,32 @@ settings.post('/validate-flair-id', async (c) => {
 
   const { subredditName } = context;
 
-  const validFlairs = await reddit.getPostFlairTemplates(subredditName);
-  const validFlairTexts = validFlairs.map((f) => f.text.toLowerCase());
+  const inputIds = value.split(',').map((f) => f.trim());
 
-  const inputFlairs = value.split(',').map((f) => f.trim().toLowerCase());
-
-  // check for empty entries from trailing/double commas
-  if (inputFlairs.some((f) => f === '')) {
+  if (inputIds.some((f) => f === '')) {
     return c.json<SettingsValidationResponse>({
       success: false,
       error: 'Invalid format — check for trailing or double commas',
     });
   }
 
-  // check each flair actually exists in the subreddit
-  const invalidFlairs = inputFlairs.filter((f) => !validFlairTexts.includes(f));
-
-  if (invalidFlairs.length > 0) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const invalidFormat = inputIds.filter((f) => !uuidRegex.test(f));
+  if (invalidFormat.length > 0) {
     return c.json<SettingsValidationResponse>({
       success: false,
-      error: `These flairs don't exist in this subreddit: ${invalidFlairs.join(', ')}`,
+      error: `Invalid flair ID format: ${invalidFormat.join(', ')}`,
+    });
+  }
+
+  const validFlairs = await reddit.getPostFlairTemplates(subredditName);
+  const validIds = validFlairs.map((f) => f.id);
+
+  const notFound = inputIds.filter((f) => !validIds.includes(f));
+  if (notFound.length > 0) {
+    return c.json<SettingsValidationResponse>({
+      success: false,
+      error: `These flair IDs don't exist in this subreddit: ${notFound.join(', ')}`,
     });
   }
 
