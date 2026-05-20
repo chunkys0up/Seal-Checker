@@ -51,10 +51,10 @@
         "validationEndpoint": "/internal/settings/validate-time",
         "defaultValue": 60
       },
-      "urlFlairs": {
+      "urlPostFlairs": {
         "type": "string",
-        "label": "Flairs that require a url, Ex input: Research post, flair1, blog",
-        "validationEndpoint": "/internal/settings/validate-flair",
+        "label": "Flairs that require a url, Ex input: bb67c9ae-52f1-11f1-8fae-96a4d589da23, bb67c9ae-52f1-11f1-8fae-96a4d589da23",
+        "validationEndpoint": "/internal/settings/validate-flair-id",
         "defaultValue": ""
       },
       "actionOnExpiry": {

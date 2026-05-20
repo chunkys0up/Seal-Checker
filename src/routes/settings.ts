@@ -7,7 +7,7 @@ import { context, reddit } from '@devvit/web/server';
 
 export const settings = new Hono();
 
-settings.post('/validate-flair', async (c) => {
+settings.post('/validate-flair-id', async (c) => {
   const { value } = await c.req.json<SettingsValidationRequest<string>>();
 
   if (!value || value.trim() === '') {

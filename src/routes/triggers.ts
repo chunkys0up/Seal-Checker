@@ -41,19 +41,19 @@ triggers.post('/on-post-submit', async (c) => {
     'title: ' + input.post?.title + '\n\n' + 'body: ' + input.post?.selftext;
 
   // Fetch the settings
-  const urlFlairs = (await settings.get<string>('urlFlairs'))
+  const urlPostFlairs = (await settings.get<string>('urlPostFlairs'))
     ?.split(',')
     .map((f) => f.trim());
   const timeLimit = await settings.get<number>('timeLimit');
   const actionOnExpiry = await settings.get<string>('actionOnExpiry');
 
-  const postFlair = input.post?.linkFlair?.text;
-  console.log('post flair:', postFlair);
+  const postFlairId = input.post?.linkFlair?.templateId;
+  console.log('post flair:', postFlairId);
 
   // only continue if the post has a flair we need to check
   if (
-    !postFlair ||
-    !urlFlairs?.includes(postFlair) ||
+    !postFlairId ||
+    !urlPostFlairs?.includes(postFlairId) ||
     timeLimit == null ||
     !input.post
   ) {
