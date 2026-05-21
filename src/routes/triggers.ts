@@ -34,7 +34,7 @@ triggers.post('/on-app-install', async (c) => {
 });
 
 triggers.post('/on-post-submit', async (c) => {
-  console.log('\nRunning on post submit');
+  // console.log('\nRunning on post submit');
 
   const input = await c.req.json<OnPostSubmitRequest>();
   const titleAndBody =
@@ -48,7 +48,7 @@ triggers.post('/on-post-submit', async (c) => {
   const actionOnExpiry = await settings.get<string>('actionOnExpiry');
 
   const postFlairId = input.post?.linkFlair?.templateId;
-  console.log('post flair:', postFlairId);
+  // console.log('post flair:', postFlairId);
 
   // only continue if the post has a flair we need to check
   if (
@@ -73,15 +73,15 @@ triggers.post('/on-post-submit', async (c) => {
    * Create message based on if they are verified or not
    * if not verified, send mod mail of all unverified links
    */
-  console.log('found urls', foundUrls);
+  // console.log('found urls', foundUrls);
   if (foundUrls.length > 0) {
     const effectiveAllowlist = await getEffectiveAllowlist();
     const { verified, unverified } = categorizeDomains(
       foundUrls,
       effectiveAllowlist
     );
-    console.log('verified urls:', verified);
-    console.log('unverified urls:', unverified);
+    // console.log('verified urls:', verified);
+    // console.log('unverified urls:', unverified);
 
     commentText = buildURLVerifiedComment(verified, unverified);
 
@@ -105,7 +105,7 @@ triggers.post('/on-post-submit', async (c) => {
 
   if (foundUrls.length === 0 && input.post.authorId) {
     const action = actionOnExpiry ? actionOnExpiry : 'none';
-    console.log('Action when scheduler happens:', action);
+    // console.log('Action when scheduler happens:', action);
 
     const runAt = new Date(Date.now() + timeLimit * 60 * 1000);
     const schedulerId = await scheduler.runJob({

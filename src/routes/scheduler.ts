@@ -43,7 +43,7 @@ scheduler.post('/one-off-source-time-limit', async (c) => {
   // delete redis key-value
   await redis.del(postId);
 
-  console.log('from scheduler postId:', postId);
+  // console.log('from scheduler postId:', postId);
 
   return c.json<TaskResponse>({ status: 'ok' }, 200);
 });
