@@ -36,5 +36,5 @@ Seal Checker comes with a prebuilt list of trusted domains covering major news o
 https://github.com/chunkys0up/Seal-Checker
 
 ## Changelog
-### v0.0.5 – May 2026
-- Switched from flair names to flair id in settings to better represent individual flairs
+### v0.0.7 – May 2026
+- Created workaround for false flagged spam by reddit
