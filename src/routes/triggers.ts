@@ -61,6 +61,7 @@ triggers.post('/on-post-submit', async (c) => {
   }
 
   const postId = input.post.id;
+  console.log("Post Submit PostId", postId);
   let commentText = `No verifiable source URL was found in this post. Please provide a link to a credible source within ${timeLimit} minute(s) or this post may be deleted or locked.`;
 
   const textToSearch = input.post.url
@@ -134,6 +135,7 @@ triggers.post('/on-poster-comment-submit', async (c) => {
   }
 
   const postId = input.comment.postId;
+  console.log("Comment PostId:", postId);
   const postInfo = await redis.hGetAll(postId);
 
   if (!postInfo || Object.keys(postInfo).length === 0) {
@@ -141,8 +143,25 @@ triggers.post('/on-poster-comment-submit', async (c) => {
   }
 
   // found author comment
+  console.log('stored authorId:', postInfo.authorId, '| commenter id:', input.author.id, '| match:', postInfo.authorId == input.author.id);
   if (postInfo.authorId == input.author.id) {
-    const foundUrls = findUrls(input.comment.body);
+    let commentBody = input.comment.body;
+
+    // Reddit spam filter may remove URL-only comments before the trigger reads them.
+    // Re-fetch and approve so we can read the actual content.
+    if (commentBody === '[Removed by Reddit]' || commentBody === '[removed]') {
+      try {
+        const liveComment = await reddit.getCommentById(input.comment.id as `t1_${string}`);
+        await liveComment.approve();
+        commentBody = liveComment.body ?? commentBody;
+      } catch (err) {
+        console.error('Failed to approve/re-fetch removed comment:', err);
+      }
+    }
+
+    console.log('comment body:', JSON.stringify(commentBody));
+    const foundUrls = findUrls(commentBody);
+    console.log('found urls in comment:', foundUrls);
 
     // found url, delete the scheduler and redis key-values
     if (foundUrls.length > 0) {
@@ -174,7 +193,11 @@ triggers.post('/on-poster-comment-submit', async (c) => {
       }
 
       if (postInfo.schedulerId) {
+        console.log('cancelling schedulerId:', postInfo.schedulerId);
         await scheduler.cancelJob(postInfo.schedulerId);
+        console.log('scheduler cancelled');
+      } else {
+        console.log('no schedulerId found in postInfo');
       }
 
       await redis.del(postId);
