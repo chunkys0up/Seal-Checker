@@ -86,11 +86,15 @@ triggers.post('/on-post-submit', async (c) => {
     commentText = buildURLVerifiedComment(verified, unverified);
 
     if (unverified.length > 0) {
-      await reddit.sendPrivateMessage({
-        to: `/r/${context.subredditName}`,
-        subject: 'Unverified source domain - manual review needed',
-        text: `A post has been submitted with URLs from unverified domains.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.map((d) => `- ${d}`).join('\n')}`,
-      });
+      try {
+        await reddit.modMail.createModInboxConversation({
+          subject: 'Unverified source domain - manual review needed',
+          bodyMarkdown: `A post has been submitted with URLs from unverified domains.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.map((d) => `- ${d}`).join('\n')}`,
+          subredditId: context.subredditId,
+        });
+      } catch (err) {
+        console.error('Failed to send modmail for unverified domains:', err);
+      }
     }
   }
 
@@ -158,11 +162,15 @@ triggers.post('/on-poster-comment-submit', async (c) => {
       }
 
       if (unverified.length > 0) {
-        await reddit.sendPrivateMessage({
-          to: `/r/${context.subredditName}`,
-          subject: 'Unverified source domain - manual review needed',
-          text: `OP has provided URLs from unverified domains in a comment.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.map((d) => `- ${d}`).join('\n')}`,
-        });
+        try {
+          await reddit.modMail.createModInboxConversation({
+            subject: 'Unverified source domain - manual review needed',
+            bodyMarkdown: `OP has provided URLs from unverified domains in a comment.\n\nPost: https://www.reddit.com/r/${context.subredditName}/comments/${postId}\n\nUnverified domain(s):\n${unverified.map((d) => `- ${d}`).join('\n')}`,
+            subredditId: context.subredditId,
+          });
+        } catch (err) {
+          console.error('Failed to send modmail for unverified domains:', err);
+        }
       }
 
       if (postInfo.schedulerId) {
